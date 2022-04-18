@@ -1,0 +1,27 @@
+[
+    {
+        "model": "levelupapi.game",
+        "pk": 1,
+        "fields": {
+            "gametype": 1,
+            "title": "Settlers of Catan",
+            "maker": "Catan Inc",
+            "gamer": 1,
+            "number_of_players": 4,
+            "skill_level": 3
+        }
+    },
+    {
+        "model": "levelupapi.game",
+        "pk": 2,
+        "fields": {
+            "gametype": 3,
+            "title": "World of Warcraft",
+            "maker": "Blizzard",
+            "gamer": 1,
+            "number_of_players": 20,
+            "skill_level": 4
+        }
+    }
+
+]
