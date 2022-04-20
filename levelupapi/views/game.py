@@ -58,17 +58,10 @@ class GameView(ViewSet):
         Returns:
             Response -- Empty body with 204 status code
         """
-
         game = Game.objects.get(pk=pk)
-        game.title = request.data["title"]
-        game.maker = request.data["maker"]
-        game.number_of_players = request.data["number_of_players"]
-        game.skill_level = request.data["skill_level"]
-
-        game_type = GameType.objects.get(pk=request.data["gametype"])
-        game.gametype = game_type
-        game.save()
-
+        serializer = CreateGameSerializer(game, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(None, status=status.HTTP_204_NO_CONTENT)
 
 
