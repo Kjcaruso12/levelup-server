@@ -1,0 +1,161 @@
+from rest_framework import status
+from rest_framework.test import APITestCase
+from rest_framework.authtoken.models import Token
+
+from levelupapi.models import GameType, Game
+
+class GameTests(APITestCase):
+    def setUp(self):
+        """
+        Create a new Gamer, collect the auth Token, and create a sample GameType
+        """
+
+        # Define the URL path for registering a Gamer
+        url = '/register'
+
+        # Define the Gamer properties
+        gamer = {
+            "username": "steve",
+            "password": "Admin8*",
+            "first_name": "Steve",
+            "last_name": "Brownlee",
+            "bio": "Love those gamez!!"
+        }
+
+        # Initiate POST request and capture the response
+        response = self.client.post(url, gamer, format='json')
+
+        # Store the TOKEN from the response data
+        self.token = Token.objects.get(pk=response.data['token'])
+
+        # Use the TOKEN to authenticate the requests
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + self.token.key)
+
+        # Assert that the response status code is 201 (CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # SEED THE DATABASE WITH A GameType and Game
+        # This is necessary because the tests use a seperate database that has nothing in it
+        # until rows are created in the set up
+
+        self.game_type = GameType.objects.create(label="Board Game")
+        self.game = Game.objects.create(
+            gamer_id=1,
+            title="Sorry",
+            maker="Milton Bradley",
+            skill_level=5,
+            number_of_players=4,
+            gametype=self.game_type,
+        )
+
+
+    def test_create_game(self):
+        """
+        Ensure we can create (POST) a new Game.
+        """
+
+        # Define the URL path for creating a new Game
+        url = "/games"
+
+        # Define the Game properties
+        game = {
+            "gamer_id": 1,
+            "title": "Clue",
+            "maker": "Milton Bradley",
+            "skill_level": 5,
+            "number_of_players": 6,
+            "gametype": self.game_type.id
+        }
+
+        # Initiate POST request and capture the response
+        response = self.client.post(url, game, format='json')
+
+        # Assert that the response status code is 201 (CREATED)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        # Assert that the values are correct
+        self.assertEqual(response.data["gamer"]['id'], self.token.user_id)
+        self.assertEqual(response.data["title"], game['title'])
+        self.assertEqual(response.data["maker"], game['maker'])
+        self.assertEqual(response.data["skill_level"], game['skill_level'])
+        self.assertEqual(
+            response.data["number_of_players"], game['number_of_players'])
+        self.assertEqual(response.data["gametype"]['id'], game['gametype'])
+
+    def test_get_game(self):
+        """
+        Ensure we can GET an existing game.
+        """
+        # Define the URL path for getting a single Game
+        url = f'/games/{self.game.id}'
+
+        # Initiate GET request and capture the response
+        response = self.client.get(url)
+
+        # Assert that the response status code is 200 (OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Assert that the values are correct
+        self.assertEqual(response.data["gamer"]['id'], self.game.gamer_id)
+        self.assertEqual(response.data["title"], self.game.title)
+        self.assertEqual(response.data["maker"], self.game.maker)
+        self.assertEqual(response.data["skill_level"], self.game.skill_level)
+        self.assertEqual(response.data["number_of_players"], self.game.number_of_players)
+        self.assertEqual(response.data["gametype"]['id'], self.game.gametype_id)
+
+    def test_change_game(self):
+        """
+        Ensure we can change an existing game.
+        """
+        # Define the URL path for updating an existing Game
+        url = f'/games/{self.game.id}'
+
+        # Define NEW Game properties
+        new_game = {
+            "title": "Sorry",
+            "maker": "Hasbro",
+            "skill_level": 2,
+            "number_of_players": 4,
+            "gametype": 1,
+        }
+
+        # Initiate PUT request and capture the response
+        response = self.client.put(url, new_game, format="json")
+
+        # Assert that the response status code is 204 (NO CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Initiate GET request and capture the response
+        response = self.client.get(url)
+
+        # Assert that the response status code is 200 (OK)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Assert that the values are correct
+        self.assertEqual(response.data["gamer"]['id'], self.token.user_id)
+        self.assertEqual(response.data["title"], new_game['title'])
+        self.assertEqual(response.data["maker"], new_game['maker'])
+        self.assertEqual(
+            response.data["skill_level"], new_game['skill_level'])
+        self.assertEqual(
+            response.data["number_of_players"], new_game['number_of_players'])
+        self.assertEqual(response.data["gametype"]['id'], new_game['gametype'])
+
+    def test_delete_game(self):
+        """
+        Ensure we can delete an existing game.
+        """
+        # Define the URL path for deleting an existing Game
+        url = f'/games/{self.game.id}'
+
+        # Initiate DELETE request and capture the response
+        response = self.client.delete(url)
+
+        # Assert that the response status code is 204 (NO CONTENT)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Initiate GET request and capture the response
+        response = self.client.get(url)
+
+        # Assert that the response status code is 404 (NOT FOUND)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
